@@ -1,5 +1,9 @@
 # Parfait
 
+<p align="center">
+    <img src="logo/logo.png" width="300" height="300" />
+</p>
+
 Parfait is the most lightweight web application framework. It is designed to make getting started quick and easy, with the ability to scale up to complex applications.
 
 Parfait offers suggestions, but doesn't enforce any dependencies or project layout. It is up to the developer to choose the tools and libraries they want to use.
