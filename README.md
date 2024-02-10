@@ -96,6 +96,8 @@ post!("/path", handle_post => r#"src\file.json"#, |_, _| {
 
 ✅ get
 
+✅ put
+
 ✅ Handling get/post requests
 
 ✅ Compatibility with third-party libraries such as serde for JSON

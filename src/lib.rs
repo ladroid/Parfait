@@ -50,10 +50,36 @@ macro_rules! post {
     };
 }
 
+#[macro_export]
+macro_rules! put {
+    ($path:expr, $name:ident => $filename:expr, $handler:expr, $content_type:expr) => {
+        pub fn $name(path: &str, body: &str) -> Option<String> {
+            if path == $path {
+                match std::fs::File::open($filename) {
+                    Ok(mut file) => {
+                        use std::io::Read;
+                        let mut content = String::new();
+                        file.read_to_string(&mut content).unwrap();
+                        let result = $handler(&content, body);
+                        match result {
+                            Some(result) => Some(format!("HTTP/1.1 200 OK\r\nContent-Type: {}\r\n\r\n{}", $content_type, result)),
+                            None => Some(format!("HTTP/1.1 200 OK\r\nContent-Type: {}\r\n\r\n", $content_type)),
+                        }
+                    },
+                    Err(_) => None,
+                }
+            } else {
+                None
+            }
+        }
+    };
+}
+
 #[derive(Copy, Clone)]
 pub struct Handler {
     pub get_handler: Option<fn(&str) -> Option<String>>,
     pub post_handler: Option<fn(&str, &str) -> Option<String>>,
+    pub put_handler: Option<fn(&str, &str) -> Option<String>>, // New put handler
 }
 
 impl Handler {
@@ -76,6 +102,22 @@ impl Handler {
                     }
                     "POST" => {
                         if let Some(handler) = self.post_handler {
+                            let mut body = "";
+                            for line in lines {
+                                if line == "\r" {
+                                    break;
+                                } else {
+                                    body = line;
+                                }
+                            }
+                            println!("Body: {}", body); // Debug print
+                            handler(path, body)
+                        } else {
+                            Some("HTTP/1.1 404 NOT FOUND\r\n\r\n".to_owned())
+                        }
+                    }
+                    "PUT" => { // New branch for PUT method
+                        if let Some(handler) = self.put_handler {
                             let mut body = "";
                             for line in lines {
                                 if line == "\r" {

@@ -23,6 +23,7 @@ async fn main() -> io::Result<()> {
     let handler = Handler {
         get_handler: Some(home_handler),
         post_handler: Some(result_handler),
+        put_handler: None,
     };
 
     loop {
