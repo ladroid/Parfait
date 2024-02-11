@@ -4,7 +4,7 @@
     <img src="logo/logo.png" width="300" height="300" />
 </p>
 
-Parfait is the most lightweight web application framework. It is designed to make getting started quick and easy, with the ability to scale up to complex applications.
+Parfait (/pɑːrˈfeɪ/ par-FAY) is the most lightweight web application framework. It is designed to make getting started quick and easy, with the ability to scale up to complex applications.
 
 Parfait offers suggestions, but doesn't enforce any dependencies or project layout. It is up to the developer to choose the tools and libraries they want to use.
 
@@ -17,12 +17,10 @@ Parfait offers suggestions, but doesn't enforce any dependencies or project layo
 get!("/", home_handler => r#"src\input.html"#, "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n");
 
 // Define a handler for the result page
-post!("/result", result_handler => "src/output.html", |file: &str, body: &str| {
-    // Parse the body of the POST request and return the result
-    let input = body.split("=").nth(1).unwrap_or("");
-    let result = file.replace("{{ input }}", input);
-    Some(result)
-}, "text/html"); // For HTML response
+post!("/result", result_handler => "src/output.html", "text/html"); // For HTML response
+...
+get_handler: Some(|path, query| home_handler(path, query, None)),
+post_handler: Some(|path, query, body| result_handler(path, query, Some(body))),
 ```
 
 **Note** fields in the Handler can accept None type. For example:
@@ -35,27 +33,40 @@ let handler = Handler {
 };
 ```
 
+More details can be found [here](examples/test/test.rs)
+
 2. Loop:
 
 ```rust
-post!("/loop", result_handler => r#"src\loop.html"#, |file: &str, body: &str| {
-    let items = vec!["Item 1", "Item 2", "Item 3"];
-    let mut result = String::new();
-    let mut in_for_loop = false;
-    for line in file.lines() {
-        if line.contains("{% for item in items %}") {
-            in_for_loop = true;
-            for item in &items {
-                result.push_str(&line.replace("{% for item in items %}", &format!("{}", item)));
-                result.push_str("\n");
+post!("/loop", result_handler => r#"examples\test5\loop.html"#, "text/html");
+...
+post_handler: Some(|_, _, _| {
+    // Read the file content
+    match std::fs::read_to_string("examples\\test5\\loop.html") {
+        Ok(file_content) => {
+            let items = vec!["Item 1", "Item 2", "Item 3"];
+            let mut result = String::new();
+            let mut in_for_loop = false;
+            
+            for line in file_content.lines() {
+                if line.contains("{% for item in items %}") {
+                    in_for_loop = true;
+                    for item in &items {
+                        result.push_str(&line.replace("{% for item in items %}", &format!("{}", item)));
+                        result.push_str("\n");
+                    }
+                } else if in_for_loop && line.contains("{% endfor %}") {
+                    in_for_loop = false;
+                }
             }
-        } else if in_for_loop && line.contains("{% endfor %}") {
-            in_for_loop = false;
-        }
+            Some(format!("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n{}", result))
+        },
+        Err(_) => Some("HTTP/1.1 500 INTERNAL SERVER ERROR\r\n\r\nFailed to read file".to_owned()),
     }
-    Some(result)
-}, "text/html");
+}),
 ```
+
+More details can be found [here](examples/test5/test5.rs)
 
 3. Using URL path:
 
@@ -64,12 +75,7 @@ post!("/loop", result_handler => r#"src\loop.html"#, |file: &str, body: &str| {
 get!("/hello/", home_handler => r#"src\input.html"#, "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n");
 
 // Define a handler for the result page
-post!("/hello/result", result_handler => r#"src\output.html"#, |file: &str, body: &str| {
-    // Parse the body of the POST request and return the result
-    let input = body.split("=").nth(1).unwrap_or("");
-    let result = file.replace("{{ input }}", input);
-    result
-});
+post!("/hello/result", result_handler => r#"src\output.html"#, "text/html");
 ```
 
 4. JSON
@@ -90,6 +96,8 @@ post!("/path", handle_post => r#"src\file.json"#, |_, _| {
 });
 ```
 
+More details can be found [here](examples/test4/test4.rs)
+
 ## Features
 
 ✅ post
@@ -105,3 +113,22 @@ post!("/path", handle_post => r#"src\file.json"#, |_, _| {
 ✅ Error handling
 
 ✅ JSON
+
+✅ Possibility to work with query
+
+## Contributing
+
+Contributions are absolutely, positively welcome and encouraged! Contributions
+come in many forms. You could:
+
+  1. Submit a feature request or bug report as an [issue].
+  2. Ask for improved documentation as an [issue].
+  3. Comment on issues that require feedback.
+  4. Contribute code via [pull requests].
+
+[issue]: https://github.com/ladroid/Parfait/issues
+[pull requests]: https://github.com/ladroid/Parfait/pulls
+
+## License
+
+Parfait is licensed under Apache license version 2.0. See [LICENSE](https://github.com/ladroid/Parfait/blob/main/LICENSE) file.
