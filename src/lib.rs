@@ -4,6 +4,21 @@ use std::io;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 
+/// Defines a GET endpoint.
+///
+/// # Usage
+/// ```rust
+/// get!(path, handler_function => filename, headers)
+/// ```
+///
+/// # Description
+/// Defines a GET endpoint. When a GET request matches the specified `path`, the `handler_function` is invoked to generate a response based on the content of the specified `filename`. Additional headers can be included in the response.
+///
+/// # Parameters
+/// - `path`: The path prefix for which the endpoint is defined.
+/// - `handler_function`: The name of the function to handle the request.
+/// - `filename`: The name of the file containing the content for the response.
+/// - `headers`: Additional headers to include in the response.
 #[macro_export]
 macro_rules! get {
     ($path:expr, $name:ident => $filename:expr, $headers:expr) => {
@@ -37,7 +52,21 @@ macro_rules! get {
     };
 }
 
-
+/// Defines a POST endpoint.
+///
+/// # Usage
+/// ```rust
+/// post!(path, handler_function => filename, content_type)
+/// ```
+///
+/// # Description
+/// Defines a POST endpoint. When a POST request matches the specified `path`, the `handler_function` is invoked to generate a response based on the content of the specified `filename`. The `content_type` parameter specifies the MIME type of the response.
+///
+/// # Parameters
+/// - `path`: The path prefix for which the endpoint is defined.
+/// - `handler_function`: The name of the function to handle the request.
+/// - `filename`: The name of the file containing the content for the response.
+/// - `content_type`: The MIME type of the response.
 #[macro_export]
 macro_rules! post {
     ($path:expr, $name:ident => $filename:expr, $content_type:expr) => {
@@ -82,7 +111,22 @@ macro_rules! post {
     };
 }
 
-
+/// Defines a PUT endpoint.
+///
+/// # Usage
+/// ```rust
+/// put!(path, handler_function => filename, handler, content_type)
+/// ```
+///
+/// # Description
+/// Defines a PUT endpoint. When a PUT request matches the specified `path`, the `handler_function` is invoked to generate a response based on the content of the specified `filename`. The `handler` parameter allows specifying a custom handler function for processing the request body. The `content_type` parameter specifies the MIME type of the response.
+///
+/// # Parameters
+/// - `path`: The path prefix for which the endpoint is defined.
+/// - `handler_function`: The name of the function to handle the request.
+/// - `filename`: The name of the file containing the content for the response.
+/// - `handler`: A custom handler function for processing the request body.
+/// - `content_type`: The MIME type of the response.
 #[macro_export]
 macro_rules! put {
     ($path:expr, $name:ident => $filename:expr, $handler:expr, $content_type:expr) => {
@@ -108,6 +152,9 @@ macro_rules! put {
     };
 }
 
+/// Represents a handler for processing HTTP requests.
+///
+/// Contains optional functions for handling GET, POST, and PUT requests.
 #[derive(Copy, Clone)]
 pub struct Handler {
     pub get_handler: Option<fn(&str, Option<&str>) -> Option<String>>,
@@ -177,6 +224,9 @@ impl Handler {
     }
 }
 
+/// Asynchronously handles an incoming TCP stream containing an HTTP request.
+///
+/// Parses the request, invokes the appropriate handler function based on the request method, generates a response, and sends it back over the stream.
 pub async fn handle_client(mut stream: TcpStream, handler: &Handler) -> io::Result<()> {
     let mut buffer = [0; 1024];
     let mut request = String::new(); // String to store the entire request
@@ -208,6 +258,7 @@ pub async fn handle_client(mut stream: TcpStream, handler: &Handler) -> io::Resu
     Ok(())
 }
 
+/// Extracts a cookie value from an HTTP request.
 pub fn get_cookie(request: &str, name: &str) -> Option<String> {
     let cookie_header = request.lines().find(|line| line.starts_with("Cookie: "))?;
 
@@ -224,6 +275,7 @@ pub fn get_cookie(request: &str, name: &str) -> Option<String> {
     None
 }
 
+/// Parses a JSON string into a `serde_json::Value` object.
 // Function to parse JSON
 pub fn parse_json(body: &str) -> Option<serde_json::Value> {
     match serde_json::from_str(body) {
@@ -235,6 +287,7 @@ pub fn parse_json(body: &str) -> Option<serde_json::Value> {
     }
 }
 
+/// Converts a `serde_json::Value` object into a JSON string.
 // Function to generate JSON response
 pub fn generate_json_response(data: serde_json::Value) -> String {
     serde_json::to_string(&data).unwrap_or_default()
