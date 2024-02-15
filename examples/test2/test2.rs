@@ -3,7 +3,7 @@ use tokio::net::TcpListener;
 extern crate parfait;
 use parfait::*;
 
-get!("/", get_index => r#"examples\test2\index.html"#, "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n");
+get!("/", get_index => ContentType::File(r#"examples\test2\index.html"#), "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n");
 
 post!("/submit", post_submit => r#"examples\test2\submit.html"#, "application/json");
 

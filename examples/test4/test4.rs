@@ -13,7 +13,7 @@ async fn main() -> io::Result<()> {
 
     let handler = Handler {
         get_handler: None,
-        post_handler: Some(|path, _, _| {
+        post_handler: Some(|_, _, _| {
             // Read the file content
             match std::fs::read_to_string("examples\\test4\\file.json") {
                 Ok(content) => {

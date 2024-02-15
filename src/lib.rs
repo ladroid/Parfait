@@ -4,6 +4,12 @@ use std::io;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 
+/// Enum to represent the content type for GET macro
+pub enum ContentType<'a> {
+    File(&'a str),
+    String(&'a str),
+}
+
 /// Defines a GET endpoint.
 ///
 /// # Usage
@@ -21,30 +27,31 @@ use tokio::net::TcpStream;
 /// - `headers`: Additional headers to include in the response.
 #[macro_export]
 macro_rules! get {
-    ($path:expr, $name:ident => $filename:expr, $headers:expr) => {
+    ($path:expr, $name:ident => $content:expr, $headers:expr) => {
         pub fn $name(path: &str, query: Option<&str>, _: Option<&str>) -> Option<String> {
             if path.starts_with($path) {
-                match std::fs::File::open($filename) {
-                    Ok(mut html) => {
-                        use std::io::Read;
-                        let mut content = String::new();
-                        html.read_to_string(&mut content).unwrap();
-                        
-                        // Replace query parameters if they exist
-                        if let Some(query_params) = query {
-                            for param in query_params.split('&') {
-                                let parts: Vec<&str> = param.split('=').collect();
-                                if parts.len() == 2 {
-                                    let formatted_query = format!("{{{{ {} }}}}", parts[0]);
-                                    content = content.replace(&formatted_query, parts[1]);
-                                }
-                            }
+                let mut content = match $content {
+                    ContentType::File(filename) => {
+                        match std::fs::read_to_string(filename) {
+                            Ok(content) => content,
+                            Err(_) => return None,
                         }
-                        
-                        Some(format!("{}{}", $headers, content))
-                    },
-                    Err(_) => None,
+                    }
+                    ContentType::String(str_content) => str_content.to_owned(),
+                };
+
+                // Replace query parameters if they exist
+                if let Some(query_params) = query {
+                    for param in query_params.split('&') {
+                        let parts: Vec<&str> = param.split('=').collect();
+                        if parts.len() == 2 {
+                            let formatted_query = format!("{{{{ {} }}}}", parts[0]);
+                            content = content.replace(&formatted_query, parts[1]);
+                        }
+                    }
                 }
+
+                Some(format!("{}{}", $headers, content))
             } else {
                 None
             }

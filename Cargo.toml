@@ -42,3 +42,7 @@ path = "examples/test4/test4.rs"
 [[example]]
 name = "test5"
 path = "examples/test5/test5.rs"
+
+[[example]]
+name = "test6"
+path = "examples/test6/test6.rs"
