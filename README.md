@@ -8,6 +8,26 @@ Parfait (/pɑːrˈfeɪ/ par-FAY) is the most lightweight web application framewo
 
 Parfait offers suggestions, but doesn't enforce any dependencies or project layout. It is up to the developer to choose the tools and libraries they want to use.
 
+## Goal
+
+The goal of Parfait is to provide a lightweight yet powerful solution for building web applications in Rust. While there are established frameworks like Rocket and Actix available, Parfait aims to offer a unique approach tailored to specific use cases and preferences.
+
+### Macro-Based Approach
+
+Parfait utilizes macros for defining `get` and `post` endpoints, etc. This decision was made to simplify the process of defining HTTP routes and handling requests. By using macros, developers can define routes in a concise and readable manner, reducing boilerplate code and improving code maintainability. Additionally, macros allow for compile-time validation of route definitions, catching errors early in the development process. Overall, the use of macros enhances developer productivity and contributes to the framework's goal of providing a lightweight and developer-friendly solution for building web applications in Rust.
+
+### Comparison with Rocket
+
+[Rocket](https://rocket.rs/) is a feature-rich web framework for Rust known for its ease of use and extensive capabilities. It provides a robust set of features out of the box, including routing, request parsing, and response generation, making it suitable for a wide range of web applications.
+
+In comparison, Parfait takes a more minimalist approach, focusing on simplicity and flexibility. While Rocket excels in providing a comprehensive set of features, Parfait prioritizes lightweightness and customization. It aims to provide developers with more control over the components they use, allowing for greater flexibility in building web applications.
+
+### Comparison with Actix
+
+[Actix](https://actix.rs/) is a high-performance, actor-based framework for building concurrent and scalable web applications in Rust. It leverages the actor model to achieve high concurrency and asynchronous processing, making it suitable for applications with demanding performance requirements.
+
+Unlike Actix, Parfait does not adopt the actor model and does not prioritize achieving the same level of concurrency and scalability. Instead, it focuses on simplicity and ease of use while still providing sufficient performance for most web applications. Parfait is designed to be approachable for developers new to Rust web development, offering straightforward abstractions and clear documentation.
+
 ## How to use
 
 1. Input and output result:
