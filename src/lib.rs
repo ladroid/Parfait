@@ -159,6 +159,71 @@ macro_rules! put {
     };
 }
 
+/// Defines a DELETE endpoint for removing data elements from a JSON file or any text-based content.
+///
+/// # Usage
+/// ```rust
+/// delete!(path, handler_function => content_type, key)
+/// ```
+///
+/// # Description
+/// Defines a DELETE endpoint. When a DELETE request matches the specified `path`, the `handler_function` is invoked to remove an element identified by `key` from the specified content source. The `content_type` specifies whether the operation is on a JSON file or another type of text content. The operation can also be conditioned on query parameters.
+///
+/// # Parameters
+/// - `path`: The path prefix for which the endpoint is defined.
+/// - `handler_function`: The name of the function to handle the request.
+/// - `content_type`: The type of content being modified (`ContentType::File` for files, `ContentType::String` for in-memory strings).
+/// - `key`: The key or identifier of the element to be removed. For JSON, this would be the property name.
+#[macro_export]
+macro_rules! delete {
+    ($path:expr, $name:ident => $content_type:expr, $key:expr) => {
+        pub fn $name(path: &str, query: Option<&str>) -> Option<String> {
+            if path.starts_with($path) {
+                let key_to_remove = if let Some(query_params) = query {
+                    query_params.split('&')
+                        .find_map(|param| {
+                            let parts: Vec<&str> = param.split('=').collect();
+                            if parts.len() == 2 && parts[0] == "key" {
+                                Some(parts[1])
+                            } else {
+                                None
+                            }
+                        })
+                        .unwrap_or($key)
+                } else {
+                    $key
+                };
+
+                match $content_type {
+                    ContentType::File(filename) => {
+                        let mut file_content = match std::fs::read_to_string(filename) {
+                            Ok(content) => content,
+                            Err(_) => return Some("HTTP/1.1 404 NOT FOUND\r\nContent-Type: text/plain\r\n\r\nFile not found.".to_owned()),
+                        };
+
+                        // Specific handling for JSON files
+                        if let Ok(mut json) = serde_json::from_str::<serde_json::Value>(&file_content) {
+                            json.as_object_mut().unwrap().remove(key_to_remove);
+                            file_content = serde_json::to_string(&json).unwrap();
+                            std::fs::write(filename, file_content).unwrap();
+                            Some(format!("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nElement '{}' removed successfully.", key_to_remove))
+                        } else {
+                            // Fallback for non-JSON content, demonstrating intent
+                            Some("HTTP/1.1 501 NOT IMPLEMENTED\r\nContent-Type: text/plain\r\n\r\nDeletion from non-JSON content not implemented.".to_owned())
+                        }
+                    },
+                    ContentType::String(str_content) => {
+                        // Demonstration for in-memory string content, not implemented
+                        Some("HTTP/1.1 501 NOT IMPLEMENTED\r\nContent-Type: text/plain\r\n\r\nDeletion from in-memory content not implemented.".to_owned())
+                    },
+                }
+            } else {
+                None
+            }
+        }
+    };
+}
+
 /// Represents a handler for processing HTTP requests.
 ///
 /// Contains optional functions for handling GET, POST, and PUT requests.
@@ -166,7 +231,8 @@ macro_rules! put {
 pub struct Handler {
     pub get_handler: Option<fn(&str, Option<&str>) -> Option<String>>,
     pub post_handler: Option<fn(&str, Option<&str>, &str) -> Option<String>>,
-    pub put_handler: Option<fn(&str, &str) -> Option<String>>, // New put handler
+    pub put_handler: Option<fn(&str, &str) -> Option<String>>,
+    pub delete_handler: Option<fn(&str, Option<&str>) -> Option<String>>,
 }
 
 impl Handler {
@@ -222,6 +288,13 @@ impl Handler {
                         }
                     }
                     handler(path, body)
+                } else {
+                    Some("HTTP/1.1 404 NOT FOUND\r\n\r\n".to_owned())
+                }
+            }
+            "DELETE" => {
+                if let Some(handler) = self.delete_handler {
+                    handler(path, query)
                 } else {
                     Some("HTTP/1.1 404 NOT FOUND\r\n\r\n".to_owned())
                 }

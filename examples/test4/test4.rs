@@ -30,6 +30,7 @@ async fn main() -> io::Result<()> {
             }
         }),
         put_handler: None,
+        delete_handler: None,
     };
 
     loop {

@@ -24,6 +24,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         get_handler: Some(|path, query| get_index(path, query, None)),
         post_handler: Some(|path, query, body| post_submit(path, query, Some(body))),
         put_handler: Some(|path, body| put_update(path, body)),
+        delete_handler: None,
     };
 
     loop {

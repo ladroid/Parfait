@@ -126,6 +126,8 @@ More details can be found [here](examples/test4/test4.rs)
 
 ✅ put
 
+✅ delete
+
 ✅ Handling get/post requests
 
 ✅ Compatibility with third-party libraries such as serde for JSON

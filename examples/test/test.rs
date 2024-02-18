@@ -17,6 +17,7 @@ async fn main() -> io::Result<()> {
         get_handler: Some(|path, query| home_handler(path, query, None)),
         post_handler: Some(|path, query, body| result_handler(path, query, Some(body))),
         put_handler: None,
+        delete_handler: None,
     };
 
     loop {
