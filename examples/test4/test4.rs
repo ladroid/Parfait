@@ -1,5 +1,4 @@
 use std::io;
-use tokio::net::TcpListener;
 
 extern crate parfait;
 use parfait::*;
@@ -7,10 +6,7 @@ use parfait::*;
 post!("/path", handle_post => r#"examples\test4\file.json"#, "application/json");
 
 #[tokio::main]
-async fn main() -> io::Result<()> {
-    let listener = TcpListener::bind("127.0.0.1:8080").await?;
-    println!("Server listening on port 8080...");
-
+async fn main() -> io::Result<()> { 
     let handler = Handler {
         get_handler: None,
         post_handler: Some(|_, _, _| {
@@ -32,13 +28,5 @@ async fn main() -> io::Result<()> {
         put_handler: None,
         delete_handler: None,
     };
-
-    loop {
-        let (stream, _) = listener.accept().await?;
-        tokio::spawn(async move {
-            if let Err(err) = handle_client(stream, &handler).await {
-                eprintln!("Error handling client: {:?}", err);
-            }
-        });
-    }
+    run("127.0.0.1", 8080, handler).await
 }

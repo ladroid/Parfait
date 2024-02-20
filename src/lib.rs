@@ -372,3 +372,22 @@ pub fn parse_json(body: &str) -> Option<serde_json::Value> {
 pub fn generate_json_response(data: serde_json::Value) -> String {
     serde_json::to_string(&data).unwrap_or_default()
 }
+
+pub async fn run(addr: &str, port: u16, handler: Handler) -> io::Result<()> {
+    let address = format!("{}:{}", addr, port);
+    let listener = tokio::net::TcpListener::bind(&address).await?;
+    println!("Server listening on {}", address);
+    
+    let handler = std::sync::Arc::new(handler); // Wrap handler in an Arc for shared ownership
+
+    loop {
+        let (stream, _) = listener.accept().await?;
+        let handler_clone = handler.clone(); // Clone the Arc to get a new reference for the new task
+
+        tokio::spawn(async move {
+            if let Err(e) = handle_client(stream, &handler_clone).await {
+                eprintln!("Failed to handle client: {}", e);
+            }
+        });
+    }
+}

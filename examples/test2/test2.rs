@@ -1,5 +1,3 @@
-use tokio::net::TcpListener;
-
 extern crate parfait;
 use parfait::*;
 
@@ -16,23 +14,13 @@ put!("/update", put_update => r#"examples\test2\update.html"#, |file: &str, body
 
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let listener = TcpListener::bind("127.0.0.1:8080").await?;
-    println!("Server running on port 8080...");
-
+async fn main() -> Result<(), Box<dyn std::error::Error>> { 
     let handler = Handler {
         get_handler: Some(|path, query| get_index(path, query, None)),
         post_handler: Some(|path, query, body| post_submit(path, query, Some(body))),
         put_handler: Some(|path, body| put_update(path, body)),
         delete_handler: None,
     };
-
-    loop {
-        let (stream, _) = listener.accept().await?;
-        tokio::spawn(async move {
-            if let Err(e) = handle_client(stream, &handler).await {
-                eprintln!("Error handling client: {}", e);
-            }
-        });
-    }
+    run("127.0.0.1", 8080, handler).await?;
+    Ok(())
 }
