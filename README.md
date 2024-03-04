@@ -6,7 +6,7 @@
 
 Parfait (/pɑːrˈfeɪ/ par-FAY) is the most lightweight web application framework. It is designed to make getting started quick and easy, with the ability to scale up to complex applications.
 
-Parfait offers suggestions, but doesn't enforce any dependencies or project layout. It is up to the developer to choose the tools and libraries they want to use.
+Parfait depends on several libraries - serde for JSON and tokio for asynchronous.
 
 ## Goal
 
@@ -48,8 +48,8 @@ post_handler: Some(|path, query, body| result_handler(path, query, Some(body))),
 ```rust
 ....
 let handler = Handler {
-    get_handler: Some(home_handler),
-    post_handler: None,
+    get_handler: Some(|path, query| home_handler(path, query, None)),
+    post_handler: Some(|path, query, body| result_handler(path, query, Some(body))),
 };
 ```
 
