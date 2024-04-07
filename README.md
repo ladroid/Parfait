@@ -138,6 +138,8 @@ More details can be found [here](examples/test4/test4.rs)
 
 ✅ Possibility to work with query
 
+✅ Middleware
+
 ## Contributing
 
 Contributions are absolutely, positively welcome and encouraged! Contributions

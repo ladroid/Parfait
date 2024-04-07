@@ -1,3 +1,5 @@
+#![allow(unused_variables)]
+#![allow(dead_code)]
 #![macro_use]
 
 use std::io;
@@ -386,6 +388,131 @@ pub async fn run(addr: &str, port: u16, handler: Handler) -> io::Result<()> {
 
         tokio::spawn(async move {
             if let Err(e) = handle_client(stream, &handler_clone).await {
+                eprintln!("Failed to handle client: {}", e);
+            }
+        });
+    }
+}
+
+/// Middleware support for pre and post request processing.
+pub trait Middleware: Send + Sync {
+    fn before(&self, request: &str) -> Option<String>;
+    fn after(&self, response: &str) -> Option<String>;
+}
+
+/// Basic logging middleware example.
+pub struct LoggingMiddleware;
+
+impl Middleware for LoggingMiddleware {
+    fn before(&self, request: &str) -> Option<String> {
+        println!("Received request: {}", request);
+        None
+    }
+
+    fn after(&self, response: &str) -> Option<String> {
+        println!("Sending response: {}", response);
+        None
+    }
+}
+
+/// Support for routing with parameter extraction.
+#[macro_export]
+macro_rules! route {
+    ($method:expr, $path:expr, $handler:expr) => {
+        if $method == "GET" && $path.starts_with($path) {
+            // Extract parameters from path and pass them to the handler
+            let params: Vec<&str> = $path.split('/').collect();
+            $handler(params)
+        }
+    };
+}
+
+/// JSON Web Token (JWT) authentication middleware.
+pub struct AuthMiddleware {
+    valid_tokens: Vec<String>, // Could be a more complex structure for scalability
+}
+
+impl AuthMiddleware {
+    pub fn new(valid_tokens: Vec<String>) -> AuthMiddleware {
+        AuthMiddleware {
+            valid_tokens,
+        }
+    }
+}
+
+impl Middleware for AuthMiddleware {
+    fn before(&self, request: &str) -> Option<String> {
+        let token = request.lines()
+            .find(|line| line.starts_with("Authorization: Bearer "))
+            .and_then(|header| Some(header.replace("Authorization: Bearer ", "")));
+
+        match token {
+            Some(t) if self.valid_tokens.contains(&t) => None,
+            _ => Some("HTTP/1.1 401 Unauthorized\r\n\r\n".to_owned()),
+        }
+    }
+
+    fn after(&self, response: &str) -> Option<String> {
+        None
+    }
+}
+
+/// Support for static file serving.
+pub fn serve_static(path: &str) -> Option<String> {
+    // Serve files from a designated static directory
+    let static_file_path = format!("static/{}", path);
+    match std::fs::read_to_string(static_file_path) {
+        Ok(content) => Some(format!("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n{}", content)),
+        Err(_) => Some("HTTP/1.1 404 NOT FOUND\r\n\r\n".to_owned()),
+    }
+}
+
+/// Integrating middleware into the request handling process.
+pub async fn handle_client_with_middleware(mut stream: TcpStream, handler: &Handler, middleware: &dyn Middleware) -> io::Result<()> {
+    // Similar to handle_client, but with middleware invocation
+    let mut buffer = [0; 1024];
+    let mut request = String::new();
+
+    loop {
+        let n = stream.read(&mut buffer).await?;
+        if n == 0 { break; }
+
+        request.push_str(&String::from_utf8_lossy(&buffer[..n]));
+        if request.contains("\r\n\r\n") { break; }
+    }
+
+    // Invoke the before middleware function
+    if let Some(response) = middleware.before(&request) {
+        stream.write_all(response.as_bytes()).await?;
+        return Ok(());
+    }
+
+    let response = handler.handle_request(&request).unwrap_or_else(|| "HTTP/1.1 500 Internal Server Error\r\n\r\n".to_owned());
+
+    // Invoke the after middleware function
+    let response = middleware.after(&response).unwrap_or(response);
+
+    stream.write_all(response.as_bytes()).await?;
+    stream.flush().await?;
+
+    Ok(())
+}
+
+/// Modified server run function that accepts middleware.
+pub async fn run_with_middleware(addr: &str, port: u16, handler: Handler, middleware: std::sync::Arc<dyn Middleware>) -> io::Result<()> {
+    let address = format!("{}:{}", addr, port);
+    let listener = tokio::net::TcpListener::bind(&address).await?;
+    println!("Server listening on {}", address);
+
+    let handler = std::sync::Arc::new(handler);
+
+    loop {
+        let (stream, _) = listener.accept().await?;
+        let handler_clone = handler.clone();
+        let middleware_clone = middleware.clone(); // Clone Arc for the new task
+
+        tokio::spawn(async move {
+            if let Err(e) = handle_client_with_middleware(stream, &handler_clone, &*middleware_clone).await {
                 eprintln!("Failed to handle client: {}", e);
             }
         });

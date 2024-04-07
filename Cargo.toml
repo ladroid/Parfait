@@ -1,6 +1,6 @@
 [package]
 name = "parfait"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["ladroid"]
 description = """
 Most lightweight and easy to use web framework.
@@ -46,3 +46,7 @@ path = "examples/test5/test5.rs"
 [[example]]
 name = "test6"
 path = "examples/test6/test6.rs"
+
+[[example]]
+name = "test7"
+path = "examples/test7/test7.rs"
